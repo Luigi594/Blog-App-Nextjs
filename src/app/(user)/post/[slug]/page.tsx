@@ -1,6 +1,8 @@
-import RichTextComponent from "@/src/app/components/RichTextComponent";
+import { RichTextComponent } from "@/src/app/components/RichTextComponent";
 import useFetchSinglePost from "@/src/app/hooks/useFetchSinglePost";
+import { client } from "@/src/app/lib/sanity.client";
 import urlFor from "@/src/app/lib/urlFor";
+import { groq } from "next-sanity";
 import Image from "next/image";
 import PortableText from "react-portable-text";
 
@@ -9,6 +11,24 @@ type PostProps = {
     slug: string;
   };
 };
+
+// revalite the page every 60 seconds
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  const query = groq`
+    *[_type=='post']{
+        slug
+    }
+    `;
+
+  const slugs: Posts[] = await client.fetch(query);
+  const slugRoutes = slugs.map((slug) => slug.slug.current);
+
+  return slugRoutes.map((slug) => ({
+    slug,
+  }));
+}
 
 async function Post({ params: { slug } }: PostProps) {
   const { post } = await useFetchSinglePost(slug);
